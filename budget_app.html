@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget App</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #dbe3ee;
+      --accent: #1d4ed8;
+      --accent-2: #0f766e;
+      --danger: #b91c1c;
+      --income: #ecfdf5;
+      --expense: #fff7ed;
+      --summary: #eff6ff;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #0f766e);
+      color: white;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.5;
+    }
+
+    .toolbar, .summary-grid, .table-card {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr auto auto auto auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    input, select, button {
+      font: inherit;
+    }
+
+    input[type="text"], input[type="month"], input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      background: white;
+      color: var(--text);
+    }
+
+    input:focus {
+      outline: 2px solid rgba(29, 78, 216, 0.15);
+      border-color: var(--accent);
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: 0.2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .primary { background: var(--accent); color: white; }
+    .secondary { background: #e5eefc; color: #123; }
+    .success { background: #dcfce7; color: #14532d; }
+    .danger { background: #fee2e2; color: var(--danger); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .summary-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: var(--summary);
+    }
+
+    .summary-box h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .summary-box .value {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .table-card {
+      overflow: hidden;
+    }
+
+    .table-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-head h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.9rem;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr.income-row { background: var(--income); }
+    tr.expense-row { background: white; }
+    tr.disposable-row { background: #eefbf3; }
+
+    .item-name {
+      font-weight: 700;
+    }
+
+    .category-pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .pill-income { background: #d1fae5; color: #065f46; }
+    .pill-expense { background: #ffedd5; color: #9a3412; }
+    .pill-result { background: #dcfce7; color: #166534; }
+
+    .amount-cell input {
+      text-align: right;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footer-note {
+      padding: 14px 18px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 940px) {
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 14px; }
+      .toolbar, .summary-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 { font-size: 1.6rem; }
+    }
+
+    @media print {
+      body { background: white; }
+      .hero { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .toolbar button, .row-actions, .footer-note { display: none !important; }
+      .toolbar, .summary-grid, .table-card, .hero { box-shadow: none; }
+      .wrap { max-width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Personal Budget App</h1>
+      <p>Track income, expenses, savings, debt, and disposable income. All line item names are editable, amounts are calculated live, and the budget saves in the browser automatically.</p>
+    </section>
+
+    <section class="toolbar">
+      <div class="field">
+        <label for="monthInput">Budget Month</label>
+        <input id="monthInput" type="text" value="Month 2016" placeholder="e.g. April 2026" />
+      </div>
+      <div class="field">
+        <label for="newItemName">New Line Item</label>
+        <input id="newItemName" type="text" placeholder="Enter a new item name" />
+      </div>
+      <div class="field">
+        <label for="newItemType">Type</label>
+        <select id="newItemType">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+      <button class="primary" id="addItemBtn">Add Item</button>
+      <button class="secondary" id="exportBtn">Export CSV</button>
+      <button class="success" id="printBtn">Print / Save PDF</button>
+    </section>
+
+    <section class="summary-grid">
+      <div class="summary-box">
+        <h3>Total Income</h3>
+        <div class="value" id="totalIncome">R 0.00</div>
+      </div>
+      <div class="summary-box">
+        <h3>Total Expenses</h3>
+        <div class="value" id="totalExpenses">R 0.00</div>
+      </div>
+      <div class="summary-box">
+        <h3>Total Savings / Planning</h3>
+        <div class="value" id="totalSavings">R 0.00</div>
+      </div>
+      <div class="summary-box">
+        <h3>Disposable Income</h3>
+        <div class="value" id="disposableIncome">R 0.00</div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-head">
+        <div>
+          <h2 id="budgetTitle">Month 2016 Budget</h2>
+          <div class="muted">Editable names, live totals, local autosave</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 34%;">Line Item Name</th>
+              <th style="width: 16%;">Type</th>
+              <th style="width: 18%;">Budgeted Amount</th>
+              <th style="width: 18%;">Monthly Note</th>
+              <th style="width: 14%;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="budgetBody"></tbody>
+        </table>
+      </div>
+      <div class="footer-note">
+        Tip: rename any item directly in the first column. “Disposable Income” is calculated automatically as income minus all other amounts.
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'budget_app_v1';
+
+    const defaultItems = [
+      { name: 'Bruto Income', type: 'income', amount: 0, note: '' },
+      { name: 'Less Expenses', type: 'expense', amount: 0, note: '' },
+      { name: 'Housing', type: 'expense', amount: 0, note: '' },
+      { name: 'Vehicle Finance Incl Add. Insurance & Covers', type: 'expense', amount: 0, note: '' },
+      { name: 'Transport', type: 'expense', amount: 0, note: '' },
+      { name: 'Insurance', type: 'expense', amount: 0, note: '' },
+      { name: 'Church', type: 'expense', amount: 0, note: '' },
+      { name: 'Cell Contracts', type: 'expense', amount: 0, note: '' },
+      { name: 'Studies: (CPUT Btech, Unisa, USB)', type: 'expense', amount: 0, note: '' },
+      { name: 'Internet Usage Fee', type: 'expense', amount: 0, note: '' },
+      { name: 'Bank Costs', type: 'expense', amount: 0, note: '' },
+      { name: 'Vehicle Tracking', type: 'expense', amount: 0, note: '' },
+      { name: 'Credit Card', type: 'expense', amount: 0, note: '' },
+      { name: 'RCP: Recolcing Credit Policy', type: 'expense', amount: 0, note: '' },
+      { name: 'Bond Expenses: House', type: 'expense', amount: 0, note: '' },
+      { name: 'Home Loan : FNB', type: 'expense', amount: 0, note: '' },
+      { name: 'Water&rates Payments', type: 'expense', amount: 0, note: '' },
+      { name: 'Electricity', type: 'expense', amount: 0, note: '' },
+      { name: 'DsTV', type: 'expense', amount: 0, note: '' },
+      { name: 'Telephone Account', type: 'expense', amount: 0, note: '' },
+      { name: 'Medical Aid Contribution, Dr Payment, Medication', type: 'expense', amount: 0, note: '' },
+      { name: 'Birthday’s (Cakes, Presents, Parties)', type: 'expense', amount: 0, note: '' },
+      { name: 'Christmas (Presents, Parties)', type: 'expense', amount: 0, note: '' },
+      { name: 'Festive Season Travel Funds (Petrol)', type: 'expense', amount: 0, note: '' },
+      { name: 'Savings', type: 'expense', amount: 0, note: '' },
+      { name: 'Emergency Savings', type: 'expense', amount: 0, note: '' },
+      { name: 'Fixed Savings', type: 'expense', amount: 0, note: '' },
+      { name: 'Retirement Savings', type: 'expense', amount: 0, note: '' },
+      { name: 'Funeral Savings', type: 'expense', amount: 0, note: '' },
+      { name: 'Financial Planning', type: 'expense', amount: 0, note: '' },
+      { name: 'Education Plan (CPUT, Unisa, USB)', type: 'expense', amount: 0, note: '' },
+      { name: 'Electronics (Tablet, Phone)', type: 'expense', amount: 0, note: '' },
+      { name: 'Car Deposit / Balloon Settlement', type: 'expense', amount: 0, note: '' },
+      { name: 'Computer Hardware&Software', type: 'expense', amount: 0, note: '' },
+      { name: 'Appliances: (TV, Decoders, Microwaves)', type: 'expense', amount: 0, note: '' },
+      { name: 'IIA Membership', type: 'expense', amount: 0, note: '' },
+      { name: 'Car Maintanance', type: 'expense', amount: 0, note: '' },
+      { name: 'Shops Truworths Markhams', type: 'expense', amount: 0, note: '' },
+      { name: 'Vacation', type: 'expense', amount: 0, note: '' },
+      { name: 'House Purchase', type: 'expense', amount: 0, note: '' },
+      { name: 'Toiletries', type: 'expense', amount: 0, note: '' },
+      { name: 'Birthday Expenses', type: 'expense', amount: 0, note: '' },
+      { name: 'Baby Expenses', type: 'expense', amount: 0, note: '' },
+      { name: 'Wedding Expenses', type: 'expense', amount: 0, note: '' },
+      { name: 'Loan Account', type: 'expense', amount: 0, note: '' },
+      { name: 'Pocket Money', type: 'expense', amount: 0, note: '' },
+      { name: 'Debt', type: 'expense', amount: 0, note: '' },
+      { name: 'Cell Phone Purchased', type: 'expense', amount: 0, note: '' },
+      { name: 'Loan Settlement', type: 'expense', amount: 0, note: '' },
+      { name: 'Interest Re-Imbursement', type: 'expense', amount: 0, note: '' },
+      { name: 'Disposable Income', type: 'result', amount: 0, note: 'Auto-calculated' }
+    ];
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && Array.isArray(saved.items)) return saved;
+      } catch (e) {}
+      return {
+        month: 'Month 2016',
+        items: structuredClone(defaultItems)
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function formatRand(value) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        minimumFractionDigits: 2
+      }).format(Number(value || 0));
+    }
+
+    function classifyItem(name) {
+      const keywords = ['saving', 'retirement', 'funeral', 'financial planning', 'education plan', 'house purchase', 'vacation'];
+      const lower = name.toLowerCase();
+      return keywords.some(k => lower.includes(k)) ? 'savings' : 'normal';
+    }
+
+    function computeTotals() {
+      let totalIncome = 0;
+      let totalExpenses = 0;
+      let totalSavings = 0;
+
+      state.items.forEach(item => {
+        if (item.type === 'income') totalIncome += Number(item.amount || 0);
+        if (item.type === 'expense') {
+          totalExpenses += Number(item.amount || 0);
+          if (classifyItem(item.name) === 'savings') {
+            totalSavings += Number(item.amount || 0);
+          }
+        }
+      });
+
+      const disposable = totalIncome - totalExpenses;
+      const resultItem = state.items.find(item => item.type === 'result');
+      if (resultItem) resultItem.amount = disposable;
+
+      document.getElementById('totalIncome').textContent = formatRand(totalIncome);
+      document.getElementById('totalExpenses').textContent = formatRand(totalExpenses);
+      document.getElementById('totalSavings').textContent = formatRand(totalSavings);
+      document.getElementById('disposableIncome').textContent = formatRand(disposable);
+    }
+
+    function render() {
+      document.getElementById('monthInput').value = state.month;
+      document.getElementById('budgetTitle').textContent = `${state.month} Budget`;
+      const body = document.getElementById('budgetBody');
+      body.innerHTML = '';
+
+      state.items.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = item.type === 'income' ? 'income-row' : item.type === 'result' ? 'disposable-row' : 'expense-row';
+
+        const typeClass = item.type === 'income' ? 'pill-income' : item.type === 'result' ? 'pill-result' : 'pill-expense';
+        const typeLabel = item.type === 'result' ? 'Calculated' : (item.type.charAt(0).toUpperCase() + item.type.slice(1));
+
+        tr.innerHTML = `
+          <td>
+            <input type="text" value="${escapeHtml(item.name)}" ${item.type === 'result' ? 'readonly' : ''} data-field="name" data-index="${index}" class="item-name" />
+          </td>
+          <td>
+            <span class="category-pill ${typeClass}">${typeLabel}</span>
+          </td>
+          <td class="amount-cell">
+            <input type="number" step="0.01" value="${Number(item.amount || 0)}" ${item.type === 'result' ? 'readonly' : ''} data-field="amount" data-index="${index}" />
+          </td>
+          <td>
+            <input type="text" value="${escapeHtml(item.note || '')}" ${item.type === 'result' ? 'readonly' : ''} data-field="note" data-index="${index}" />
+          </td>
+          <td>
+            <div class="row-actions">
+              ${item.type !== 'result' ? `<button class="danger icon-btn" data-delete="${index}">Delete</button>` : `<span class="muted">Locked</span>`}
+            </div>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+
+      computeTotals();
+      saveState();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    document.getElementById('monthInput').addEventListener('input', (e) => {
+      state.month = e.target.value || 'Budget';
+      render();
+    });
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      const name = document.getElementById('newItemName').value.trim();
+      const type = document.getElementById('newItemType').value;
+      if (!name) {
+        alert('Please enter a line item name.');
+        return;
+      }
+      const resultIndex = state.items.findIndex(item => item.type === 'result');
+      const newItem = { name, type, amount: 0, note: '' };
+      if (resultIndex >= 0) state.items.splice(resultIndex, 0, newItem);
+      else state.items.push(newItem);
+      document.getElementById('newItemName').value = '';
+      render();
+    });
+
+    document.getElementById('budgetBody').addEventListener('input', (e) => {
+      const field = e.target.dataset.field;
+      const index = Number(e.target.dataset.index);
+      if (!field || Number.isNaN(index)) return;
+      if (field === 'amount') {
+        state.items[index][field] = Number(e.target.value || 0);
+      } else {
+        state.items[index][field] = e.target.value;
+      }
+      computeTotals();
+      saveState();
+      if (field === 'name') document.getElementById('budgetTitle').textContent = `${state.month} Budget`;
+    });
+
+    document.getElementById('budgetBody').addEventListener('click', (e) => {
+      const deleteIndex = e.target.dataset.delete;
+      if (deleteIndex === undefined) return;
+      state.items.splice(Number(deleteIndex), 1);
+      render();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const rows = [['Month', state.month], [], ['Line Item Name', 'Type', 'Budgeted Amount', 'Monthly Note']];
+      state.items.forEach(item => {
+        rows.push([item.name, item.type, Number(item.amount || 0).toFixed(2), item.note || '']);
+      });
+      const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${state.month.replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'budget'}_budget.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>

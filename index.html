@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget App</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #dbe3ef;
+      --accent: #0f766e;
+      --accent-soft: #ecfdf5;
+      --danger: #b91c1c;
+      --warning: #92400e;
+      --good: #166534;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+    .wrap { max-width: 1400px; margin: 0 auto; }
+    .hero, .panel, .section-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0; font-size: 1.8rem; }
+    .muted { color: var(--muted); }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fafcff;
+    }
+    .summary-card strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-top: 6px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, select, button {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      padding: 11px 12px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+    }
+    button {
+      width: auto;
+      cursor: pointer;
+      font-weight: 700;
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    button.secondary {
+      background: white;
+      color: var(--text);
+      border-color: #cbd5e1;
+    }
+    button.danger {
+      background: #fff1f2;
+      color: var(--danger);
+      border-color: #fecdd3;
+    }
+    .panel {
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+    .section-card { margin-bottom: 16px; overflow: hidden; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: #fbfdff;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .section-head-left { display: flex; align-items: center; gap: 12px; }
+    .chev {
+      width: 12px; height: 12px;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-top: -4px;
+    }
+    .section-card.collapsed .chev { transform: rotate(-45deg); margin-top: 2px; }
+    .section-body { padding: 14px 18px 18px; }
+    .section-card.collapsed .section-body { display: none; }
+    .section-meta {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      color: var(--muted); font-size: 0.92rem;
+    }
+    .subtotal-chip {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid #bbf7d0;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: #fcfdff;
+    }
+    td.amount, td.diff { font-variant-numeric: tabular-nums; }
+    .type-pill {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .type-income { background: #ecfdf5; color: #166534; }
+    .type-expense { background: #eff6ff; color: #1d4ed8; }
+    .type-result { background: #fef3c7; color: #92400e; }
+    .row-actions { display: flex; justify-content: flex-end; }
+    .difference-positive { color: var(--good); font-weight: 700; }
+    .difference-negative { color: var(--danger); font-weight: 700; }
+    .difference-neutral { color: var(--muted); font-weight: 700; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+    .footer-note { margin-top: 10px; color: var(--muted); font-size: 0.9rem; }
+    @media (max-width: 980px) {
+      body { padding: 14px; }
+      .controls-grid, .summary-grid { grid-template-columns: 1fr; }
+      .hero-top { flex-direction: column; }
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .toolbar, .panel, .footer-note, .row-actions, .section-head button { display: none !important; }
+      .hero, .section-card { box-shadow: none; border: 1px solid #ddd; }
+      .section-body { display: block !important; }
+      .section-card.collapsed .section-body { display: block !important; }
+      .section-card.collapsed .chev { transform: rotate(45deg) !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>Monthly Budget App</h1>
+          <div class="muted">Grouped planner with Budget, Actual, Difference, collapsible sections, editable line items, and South African Rand formatting.</div>
+        </div>
+        <div class="toolbar">
+          <button id="expandAllBtn" class="secondary" type="button">Expand all</button>
+          <button id="collapseAllBtn" class="secondary" type="button">Collapse all</button>
+          <button id="exportBtn" class="secondary" type="button">Export CSV</button>
+          <button id="printBtn" class="secondary" type="button">Print / Save PDF</button>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div>
+          <label for="monthInput">Month</label>
+          <input id="monthInput" type="text" value="Month 2016" />
+        </div>
+        <div>
+          <label for="newItemName">New line item</label>
+          <input id="newItemName" type="text" placeholder="Enter item name" />
+        </div>
+        <div>
+          <label for="newItemType">Type</label>
+          <select id="newItemType">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div>
+          <label for="newItemSection">Section</label>
+          <select id="newItemSection"></select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="addItemBtn" type="button">Add item</button>
+        </div>
+      </div>
+
+      <div class="summary-grid" id="summaryGrid"></div>
+    </section>
+
+    <div id="sectionList"></div>
+    <div class="footer-note">The app autosaves in this browser. For GitHub Pages, keep this file named <strong>index.html</strong>.</div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'budget_app_v3';
+    const LEGACY_KEYS = ['budget_app_v2', 'budget_app_v1', 'budgetAppData'];
+
+    const SECTION_LABELS = {
+      income: 'Income',
+      household: 'Household',
+      utilities: 'Utilities & Services',
+      health: 'Health & Family',
+      savings: 'Savings',
+      debt: 'Debt & Credit',
+      planning: 'Financial Planning',
+      lifestyle: 'Lifestyle & Personal',
+      result: 'Results'
+    };
+
+    const defaultItems = [
+      { name: 'Bruto Income', type: 'income', section: 'income', budget: 0, actual: 0, note: '' },
+      { name: 'Less Expenses', type: 'expense', section: 'household', budget: 0, actual: 0, note: '' },
+      { name: 'Housing', type: 'expense', section: 'household', budget: 0, actual: 0, note: '' },
+      { name: 'Vehicle Finance Incl Add. Insurance & Covers', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Transport', type: 'expense', section: 'household', budget: 0, actual: 0, note: '' },
+      { name: 'Insurance', type: 'expense', section: 'household', budget: 0, actual: 0, note: '' },
+      { name: 'Church', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'Cell Contracts', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Studies: (CPUT Btech, Unisa, USB)', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Internet Usage Fee', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Bank Costs', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Vehicle Tracking', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Credit Card', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'RCP: Recolcing Credit Policy', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Bond Expenses: House', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Home Loan : FNB', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Water&rates Payments', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Electricity', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'DsTV', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Telephone Account', type: 'expense', section: 'utilities', budget: 0, actual: 0, note: '' },
+      { name: 'Medical Aid Contribution, Dr Payment, Medication', type: 'expense', section: 'health', budget: 0, actual: 0, note: '' },
+      { name: 'Birthday’s (Cakes, Presents, Parties)', type: 'expense', section: 'health', budget: 0, actual: 0, note: '' },
+      { name: 'Christmas (Presents, Parties)', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'Festive Season Travel Funds (Petrol)', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'Savings', type: 'expense', section: 'savings', budget: 0, actual: 0, note: '' },
+      { name: 'Emergency Savings', type: 'expense', section: 'savings', budget: 0, actual: 0, note: '' },
+      { name: 'Fixed Savings', type: 'expense', section: 'savings', budget: 0, actual: 0, note: '' },
+      { name: 'Retirement Savings', type: 'expense', section: 'savings', budget: 0, actual: 0, note: '' },
+      { name: 'Funeral Savings', type: 'expense', section: 'savings', budget: 0, actual: 0, note: '' },
+      { name: 'Financial Planning', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Education Plan (CPUT, Unisa, USB)', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Electronics  (Tablet, Phone)', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Car Deposit / Balloon Settlement', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Computer Hardware&Software', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Appliances: (TV, Decoders, Microwaves)', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'IIA Membership', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Car Maintanance', type: 'expense', section: 'household', budget: 0, actual: 0, note: '' },
+      { name: 'Shops Truworths Markhams', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'Vacation', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'House Purchase', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Toiletries', type: 'expense', section: 'health', budget: 0, actual: 0, note: '' },
+      { name: 'Birthday Expenses', type: 'expense', section: 'health', budget: 0, actual: 0, note: '' },
+      { name: 'Baby Expenses', type: 'expense', section: 'health', budget: 0, actual: 0, note: '' },
+      { name: 'Wedding Expenses', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Loan Account', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Pocket Money', type: 'expense', section: 'lifestyle', budget: 0, actual: 0, note: '' },
+      { name: 'Debt', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Cell Phone Purchased', type: 'expense', section: 'planning', budget: 0, actual: 0, note: '' },
+      { name: 'Loan Settlement', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Interest Re-Imbursement', type: 'expense', section: 'debt', budget: 0, actual: 0, note: '' },
+      { name: 'Disposable Income', type: 'result', section: 'result', budget: 0, actual: 0, note: 'Auto-calculated' }
+    ];
+
+    let state = loadState();
+
+    function loadState() {
+      const fromCurrent = safelyParse(localStorage.getItem(STORAGE_KEY));
+      if (fromCurrent) return normalizeState(fromCurrent);
+      for (const key of LEGACY_KEYS) {
+        const legacy = safelyParse(localStorage.getItem(key));
+        if (legacy) return normalizeState(legacy);
+      }
+      return normalizeState({ month: 'Month 2016', items: defaultItems, collapsedSections: [] });
+    }
+
+    function safelyParse(value) {
+      try { return value ? JSON.parse(value) : null; } catch { return null; }
+    }
+
+    function normalizeState(input) {
+      const items = Array.isArray(input.items) ? input.items.map(item => {
+        const type = item.type || 'expense';
+        const section = item.section || inferSection(item.name, type);
+        const budget = Number(item.budget ?? item.amount ?? 0);
+        const actual = Number(item.actual ?? item.amount ?? 0);
+        return {
+          name: item.name || 'Untitled Item',
+          type,
+          section,
+          budget,
+          actual,
+          note: item.note || ''
+        };
+      }) : defaultItems.map(item => ({ ...item }));
+
+      const resultIdx = items.findIndex(item => item.type === 'result');
+      if (resultIdx === -1) items.push({ name: 'Disposable Income', type: 'result', section: 'result', budget: 0, actual: 0, note: 'Auto-calculated' });
+      else items[resultIdx] = { ...items[resultIdx], name: 'Disposable Income', type: 'result', section: 'result', note: 'Auto-calculated' };
+
+      return {
+        month: input.month || 'Month 2016',
+        items,
+        collapsedSections: Array.isArray(input.collapsedSections) ? input.collapsedSections : []
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function inferSection(name, type) {
+      if (type === 'income') return 'income';
+      if (type === 'result') return 'result';
+      const lower = String(name || '').toLowerCase();
+      if (/(saving|retirement|funeral)/.test(lower)) return 'savings';
+      if (/(loan|debt|credit|bond|home loan|interest|finance|rcp|settlement|bank)/.test(lower)) return 'debt';
+      if (/(water|rates|electricity|internet|telephone|dstv|cell|tracking)/.test(lower)) return 'utilities';
+      if (/(medical|dr payment|medication|toiletries|baby|birthday)/.test(lower)) return 'health';
+      if (/(education|studies|planning|electronics|computer|appliances|membership|vacation|house purchase|wedding|purchased|deposit|balloon)/.test(lower)) return 'planning';
+      if (/(church|christmas|festive|shops|pocket money)/.test(lower)) return 'lifestyle';
+      return 'household';
+    }
+
+    function formatRand(value) {
+      return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 2 }).format(Number(value || 0));
+    }
+
+    function populateSectionOptions() {
+      const select = document.getElementById('newItemSection');
+      select.innerHTML = Object.entries(SECTION_LABELS)
+        .filter(([key]) => key !== 'result')
+        .map(([key, label]) => `<option value="${key}">${label}</option>`)
+        .join('');
+    }
+
+    function computeTotals() {
+      let incomeBudget = 0, incomeActual = 0, expenseBudget = 0, expenseActual = 0;
+      const sectionTotals = {};
+      Object.keys(SECTION_LABELS).forEach(key => {
+        sectionTotals[key] = { budget: 0, actual: 0 };
+      });
+
+      state.items.forEach(item => {
+        if (item.type === 'result') return;
+        if (!sectionTotals[item.section]) sectionTotals[item.section] = { budget: 0, actual: 0 };
+        sectionTotals[item.section].budget += Number(item.budget || 0);
+        sectionTotals[item.section].actual += Number(item.actual || 0);
+        if (item.type === 'income') {
+          incomeBudget += Number(item.budget || 0);
+          incomeActual += Number(item.actual || 0);
+        } else {
+          expenseBudget += Number(item.budget || 0);
+          expenseActual += Number(item.actual || 0);
+        }
+      });
+
+      const disposableBudget = incomeBudget - expenseBudget;
+      const disposableActual = incomeActual - expenseActual;
+      const resultItem = state.items.find(item => item.type === 'result');
+      if (resultItem) {
+        resultItem.budget = disposableBudget;
+        resultItem.actual = disposableActual;
+      }
+
+      sectionTotals.result = { budget: disposableBudget, actual: disposableActual };
+      return { incomeBudget, incomeActual, expenseBudget, expenseActual, disposableBudget, disposableActual, sectionTotals };
+    }
+
+    function renderSummary(totals) {
+      const rows = [
+        ['Total Income', totals.incomeBudget, totals.incomeActual],
+        ['Total Expenses', totals.expenseBudget, totals.expenseActual],
+        ['Difference', totals.incomeBudget - totals.expenseBudget, totals.incomeActual - totals.expenseActual],
+        ['Disposable Income', totals.disposableBudget, totals.disposableActual],
+        ['Budget vs Actual Gap', totals.disposableBudget - totals.disposableActual, totals.disposableBudget - totals.disposableActual]
+      ];
+
+      document.getElementById('summaryGrid').innerHTML = rows.map(([label, budget, actual]) => `
+        <div class="summary-card">
+          <div class="muted">${label}</div>
+          <strong>Budget: ${formatRand(budget)}</strong>
+          <strong>Actual: ${formatRand(actual)}</strong>
+          <div class="muted">Variance: ${formatRand(Number(budget || 0) - Number(actual || 0))}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateSectionDisplays(totals) {
+      const order = ['income', 'household', 'utilities', 'health', 'savings', 'debt', 'planning', 'lifestyle', 'result'];
+      order.forEach(sectionKey => {
+        const card = document.querySelector(`[data-section-card="${sectionKey}"]`);
+        if (!card) return;
+        const itemsInSection = state.items.filter(item => item.section === sectionKey).length;
+        const totalsForSection = totals.sectionTotals[sectionKey] || { budget: 0, actual: 0 };
+        const meta = card.querySelector('.section-meta');
+        const chip = card.querySelector('.subtotal-chip');
+        if (meta) {
+          meta.innerHTML = `
+            <span>${itemsInSection} item${itemsInSection === 1 ? '' : 's'}</span>
+            <span>Budget ${formatRand(totalsForSection.budget)}</span>
+            <span>Actual ${formatRand(totalsForSection.actual)}</span>
+            <span>Variance ${formatRand((totalsForSection.budget || 0) - (totalsForSection.actual || 0))}</span>
+          `;
+        }
+        if (chip) chip.textContent = formatRand(totalsForSection.actual);
+      });
+    }
+
+    function refreshCalculatedViews() {
+      const totals = computeTotals();
+      renderSummary(totals);
+      updateSectionDisplays(totals);
+      const resultItem = state.items.find(item => item.type === 'result');
+      if (resultItem) {
+        const resultIndex = state.items.findIndex(item => item.type === 'result');
+        const budgetInput = document.querySelector(`input[data-field="budget"][data-index="${resultIndex}"]`);
+        const actualInput = document.querySelector(`input[data-field="actual"][data-index="${resultIndex}"]`);
+        const diffCell = budgetInput?.closest('tr')?.querySelector('.diff');
+        if (budgetInput) budgetInput.value = Number(resultItem.budget || 0);
+        if (actualInput) actualInput.value = Number(resultItem.actual || 0);
+        if (diffCell) {
+          const difference = Number(resultItem.budget || 0) - Number(resultItem.actual || 0);
+          diffCell.textContent = formatRand(difference);
+          diffCell.className = `diff ${difference > 0 ? 'difference-positive' : difference < 0 ? 'difference-negative' : 'difference-neutral'}`;
+        }
+      }
+      saveState();
+    }
+
+    function render() {
+      populateSectionOptions();
+      const totals = computeTotals();
+      renderSummary(totals);
+      document.getElementById('monthInput').value = state.month;
+
+      const container = document.getElementById('sectionList');
+      const order = ['income', 'household', 'utilities', 'health', 'savings', 'debt', 'planning', 'lifestyle', 'result'];
+
+      container.innerHTML = order.map(sectionKey => renderSection(sectionKey, totals.sectionTotals[sectionKey] || { budget: 0, actual: 0 })).join('');
+      saveState();
+    }
+
+    function renderSection(sectionKey, totals) {
+      const items = state.items
+        .map((item, index) => ({ ...item, index }))
+        .filter(item => item.section === sectionKey);
+      const isCollapsed = state.collapsedSections.includes(sectionKey);
+      const rows = items.length ? items.map(renderRow).join('') : `<tr><td colspan="8" class="muted">No items in this section yet.</td></tr>`;
+
+      return `
+        <section class="section-card ${isCollapsed ? 'collapsed' : ''}" data-section-card="${sectionKey}">
+          <div class="section-head" data-toggle-section="${sectionKey}">
+            <div class="section-head-left">
+              <span class="chev"></span>
+              <div>
+                <strong>${SECTION_LABELS[sectionKey] || sectionKey}</strong>
+                <div class="section-meta">
+                  <span>${items.length} item${items.length === 1 ? '' : 's'}</span>
+                  <span>Budget ${formatRand(totals.budget)}</span>
+                  <span>Actual ${formatRand(totals.actual)}</span>
+                  <span>Variance ${formatRand((totals.budget || 0) - (totals.actual || 0))}</span>
+                </div>
+              </div>
+            </div>
+            <div class="subtotal-chip">${formatRand(sectionKey === 'result' ? totals.actual : totals.actual)}</div>
+          </div>
+          <div class="section-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 24%;">Line Item</th>
+                    <th style="width: 10%;">Type</th>
+                    <th style="width: 12%;">Section</th>
+                    <th style="width: 12%;">Budget</th>
+                    <th style="width: 12%;">Actual</th>
+                    <th style="width: 12%;">Difference</th>
+                    <th style="width: 12%;">Notes</th>
+                    <th style="width: 6%; text-align:right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderRow(item) {
+      const difference = Number(item.budget || 0) - Number(item.actual || 0);
+      const diffClass = difference > 0 ? 'difference-positive' : difference < 0 ? 'difference-negative' : 'difference-neutral';
+      const typeClass = item.type === 'income' ? 'type-income' : item.type === 'result' ? 'type-result' : 'type-expense';
+      const typeLabel = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+      const sectionOptions = Object.entries(SECTION_LABELS)
+        .filter(([key]) => key !== 'result')
+        .map(([key, label]) => `<option value="${key}" ${item.section === key ? 'selected' : ''}>${label}</option>`)
+        .join('');
+
+      return `
+        <tr>
+          <td><input type="text" value="${escapeHtml(item.name)}" ${item.type === 'result' ? 'readonly' : ''} data-field="name" data-index="${item.index}" /></td>
+          <td><span class="type-pill ${typeClass}">${typeLabel}</span></td>
+          <td>${item.type === 'result' ? `<span class="muted">${SECTION_LABELS[item.section]}</span>` : `<select data-field="section" data-index="${item.index}">${sectionOptions}</select>`}</td>
+          <td class="amount"><input type="number" step="0.01" value="${Number(item.budget || 0)}" ${item.type === 'result' ? 'readonly' : ''} data-field="budget" data-index="${item.index}" /></td>
+          <td class="amount"><input type="number" step="0.01" value="${Number(item.actual || 0)}" ${item.type === 'result' ? 'readonly' : ''} data-field="actual" data-index="${item.index}" /></td>
+          <td class="diff ${diffClass}">${formatRand(difference)}</td>
+          <td><input type="text" value="${escapeHtml(item.note || '')}" ${item.type === 'result' ? 'readonly' : ''} data-field="note" data-index="${item.index}" /></td>
+          <td><div class="row-actions">${item.type === 'result' ? '<span class="muted">Locked</span>' : `<button class="danger" data-delete="${item.index}" type="button">Delete</button>`}</div></td>
+        </tr>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    document.getElementById('monthInput').addEventListener('input', (e) => {
+      state.month = e.target.value || 'Month 2016';
+      saveState();
+    });
+
+    document.getElementById('newItemType').addEventListener('change', (e) => {
+      document.getElementById('newItemSection').value = e.target.value === 'income' ? 'income' : 'household';
+    });
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      const name = document.getElementById('newItemName').value.trim();
+      const type = document.getElementById('newItemType').value;
+      const chosenSection = document.getElementById('newItemSection').value || 'household';
+      if (!name) {
+        alert('Please enter a line item name.');
+        return;
+      }
+      const section = type === 'income' ? 'income' : chosenSection;
+      const item = { name, type, section, budget: 0, actual: 0, note: '' };
+      const resultIndex = state.items.findIndex(i => i.type === 'result');
+      if (resultIndex >= 0) state.items.splice(resultIndex, 0, item);
+      else state.items.push(item);
+      document.getElementById('newItemName').value = '';
+      render();
+    });
+
+    document.getElementById('sectionList').addEventListener('input', (e) => {
+      const field = e.target.dataset.field;
+      const index = Number(e.target.dataset.index);
+      if (!field || Number.isNaN(index) || !state.items[index]) return;
+      const item = state.items[index];
+      item[field] = field === 'budget' || field === 'actual' ? Number(e.target.value || 0) : e.target.value;
+      if (field === 'section' && item.type === 'income') item.section = 'income';
+
+      const row = e.target.closest('tr');
+      if (row) {
+        const diffCell = row.querySelector('.diff');
+        if (diffCell) {
+          const difference = Number(item.budget || 0) - Number(item.actual || 0);
+          diffCell.textContent = formatRand(difference);
+          diffCell.className = `diff ${difference > 0 ? 'difference-positive' : difference < 0 ? 'difference-negative' : 'difference-neutral'}`;
+        }
+      }
+
+      refreshCalculatedViews();
+    });
+
+    document.getElementById('sectionList').addEventListener('change', (e) => {
+      const field = e.target.dataset.field;
+      const index = Number(e.target.dataset.index);
+      if (!field || Number.isNaN(index) || !state.items[index]) return;
+      const item = state.items[index];
+      if (field === 'section') {
+        item.section = item.type === 'income' ? 'income' : e.target.value;
+        render();
+      }
+    });
+
+    document.getElementById('sectionList').addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-toggle-section]');
+      if (toggle) {
+        const key = toggle.dataset.toggleSection;
+        const set = new Set(state.collapsedSections);
+        if (set.has(key)) set.delete(key); else set.add(key);
+        state.collapsedSections = Array.from(set);
+        render();
+        return;
+      }
+      const del = e.target.closest('[data-delete]');
+      if (del) {
+        const index = Number(del.dataset.delete);
+        if (!Number.isNaN(index)) {
+          state.items.splice(index, 1);
+          render();
+        }
+      }
+    });
+
+    document.getElementById('expandAllBtn').addEventListener('click', () => {
+      state.collapsedSections = [];
+      render();
+    });
+
+    document.getElementById('collapseAllBtn').addEventListener('click', () => {
+      state.collapsedSections = Object.keys(SECTION_LABELS);
+      render();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const lines = [['Month', state.month], [], ['Section', 'Line Item Name', 'Type', 'Budget', 'Actual', 'Difference', 'Note']];
+      state.items.forEach(item => {
+        lines.push([
+          SECTION_LABELS[item.section] || item.section,
+          item.name,
+          item.type,
+          Number(item.budget || 0).toFixed(2),
+          Number(item.actual || 0).toFixed(2),
+          (Number(item.budget || 0) - Number(item.actual || 0)).toFixed(2),
+          item.note || ''
+        ]);
+      });
+      const csv = lines.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(state.month || 'budget').replace(/[^a-z0-9]+/gi, '_').toLowerCase()}_budget.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>
