@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget App</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #dbe3ee;
+      --accent: #1d4ed8;
+      --accent-2: #0f766e;
+      --danger: #b91c1c;
+      --income: #ecfdf5;
+      --summary: #eff6ff;
+      --section: #f8fafc;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1260px; margin: 0 auto; padding: 24px; }
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #0f766e);
+      color: white; border-radius: 18px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 2rem; }
+    .hero p { margin: 0; color: rgba(255,255,255,0.92); line-height: 1.5; }
+    .toolbar, .summary-grid, .section-card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); }
+    .toolbar {
+      padding: 18px; display: grid; grid-template-columns: 1.2fr 1fr 0.95fr 0.9fr auto auto auto; gap: 12px; align-items: end; margin-bottom: 18px;
+    }
+    .field label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+    input, select, button { font: inherit; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: white; color: var(--text);
+    }
+    input:focus, select:focus { outline: 2px solid rgba(29, 78, 216, 0.15); border-color: var(--accent); }
+    button {
+      border: none; border-radius: 10px; padding: 11px 14px; cursor: pointer; font-weight: 700; transition: 0.2s ease; white-space: nowrap;
+    }
+    button:hover { transform: translateY(-1px); }
+    .primary { background: var(--accent); color: white; }
+    .secondary { background: #e5eefc; color: #123; }
+    .success { background: #dcfce7; color: #14532d; }
+    .danger { background: #fee2e2; color: var(--danger); }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 18px; margin-bottom: 18px; }
+    .summary-box { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--summary); }
+    .summary-box h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--muted); }
+    .summary-box .value { font-size: 1.5rem; font-weight: 800; }
+    .section-list { display: grid; gap: 18px; }
+    .section-card { overflow: hidden; }
+    .section-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px; border-bottom: 1px solid var(--line); background: var(--section);
+    }
+    .section-head h2 { margin: 0; font-size: 1.15rem; }
+    .section-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .meta-chip {
+      border-radius: 999px; padding: 6px 10px; font-size: 0.82rem; font-weight: 700; background: white; border: 1px solid var(--line);
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 930px; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: left; }
+    th { background: #f8fafc; color: var(--muted); font-size: 0.9rem; position: sticky; top: 0; z-index: 1; }
+    tr.income-row { background: var(--income); }
+    tr.expense-row { background: white; }
+    tr.disposable-row { background: #eefbf3; }
+    .item-name { font-weight: 700; }
+    .category-pill { display: inline-block; border-radius: 999px; padding: 5px 10px; font-size: 0.78rem; font-weight: 700; }
+    .pill-income { background: #d1fae5; color: #065f46; }
+    .pill-expense { background: #ffedd5; color: #9a3412; }
+    .pill-result { background: #dcfce7; color: #166534; }
+    .amount-cell input { text-align: right; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .footer-note { padding: 14px 18px 20px; color: var(--muted); font-size: 0.9rem; }
+    .row-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .icon-btn { padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; }
+    @media (max-width: 1100px) {
+      .toolbar { grid-template-columns: 1fr 1fr 1fr 1fr; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .wrap { padding: 14px; }
+      .toolbar, .summary-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.6rem; }
+      .section-head { flex-direction: column; align-items: flex-start; }
+    }
+    @media print {
+      body { background: white; }
+      .hero { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .toolbar button, .row-actions, .footer-note { display: none !important; }
+      .toolbar, .summary-grid, .section-card, .hero { box-shadow: none; }
+      .wrap { max-width: 100%; padding: 0; }
+      .section-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Personal Budget App</h1>
+      <p>Track income, household costs, savings, debt, and future planning in grouped sections. All line item names remain editable, totals update live, and the budget saves automatically in the browser.</p>
+    </section>
+
+    <section class="toolbar">
+      <div class="field">
+        <label for="monthInput">Budget Month</label>
+        <input id="monthInput" type="text" value="Month 2016" placeholder="e.g. April 2026" />
+      </div>
+      <div class="field">
+        <label for="newItemName">New Line Item</label>
+        <input id="newItemName" type="text" placeholder="Enter a new item name" />
+      </div>
+      <div class="field">
+        <label for="newItemSection">Section</label>
+        <select id="newItemSection"></select>
+      </div>
+      <div class="field">
+        <label for="newItemType">Type</label>
+        <select id="newItemType">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+      <button class="primary" id="addItemBtn">Add Item</button>
+      <button class="secondary" id="exportBtn">Export CSV</button>
+      <button class="success" id="printBtn">Print / Save PDF</button>
+    </section>
+
+    <section class="summary-grid">
+      <div class="summary-box"><h3>Total Income</h3><div class="value" id="totalIncome">R 0.00</div></div>
+      <div class="summary-box"><h3>Total Expenses</h3><div class="value" id="totalExpenses">R 0.00</div></div>
+      <div class="summary-box"><h3>Total Savings / Planning</h3><div class="value" id="totalSavings">R 0.00</div></div>
+      <div class="summary-box"><h3>Disposable Income</h3><div class="value" id="disposableIncome">R 0.00</div></div>
+    </section>
+
+    <div class="section-list" id="sectionList"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'budget_app_v3';
+
+    const SECTION_LABELS = {
+      income: 'Income',
+      household: 'Household',
+      utilities: 'Utilities & Services',
+      health: 'Health & Family',
+      savings: 'Savings',
+      debt: 'Debt & Credit',
+      planning: 'Financial Planning & Big Purchases',
+      lifestyle: 'Lifestyle & Personal',
+      result: 'Results'
+    };
+
+    const defaultItems = [
+      { name: 'Bruto Income', type: 'income', section: 'income', amount: 0, note: '' },
+      { name: 'Less Expenses', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Housing', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Vehicle Finance Incl Add. Insurance & Covers', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Transport', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Insurance', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Church', type: 'expense', section: 'lifestyle', amount: 0, note: '' },
+      { name: 'Cell Contracts', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'Studies: (CPUT Btech, Unisa, USB)', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Internet Usage Fee', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'Bank Costs', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Vehicle Tracking', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Credit Card', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'RCP: Recolcing Credit Policy', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Bond Expenses: House', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Home Loan : FNB', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Water&rates Payments', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'Electricity', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'DsTV', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'Telephone Account', type: 'expense', section: 'utilities', amount: 0, note: '' },
+      { name: 'Medical Aid Contribution, Dr Payment, Medication', type: 'expense', section: 'health', amount: 0, note: '' },
+      { name: 'Birthday’s (Cakes, Presents, Parties)', type: 'expense', section: 'health', amount: 0, note: '' },
+      { name: 'Christmas (Presents, Parties)', type: 'expense', section: 'lifestyle', amount: 0, note: '' },
+      { name: 'Festive Season Travel Funds (Petrol)', type: 'expense', section: 'lifestyle', amount: 0, note: '' },
+      { name: 'Savings', type: 'expense', section: 'savings', amount: 0, note: '' },
+      { name: 'Emergency Savings', type: 'expense', section: 'savings', amount: 0, note: '' },
+      { name: 'Fixed Savings', type: 'expense', section: 'savings', amount: 0, note: '' },
+      { name: 'Retirement Savings', type: 'expense', section: 'savings', amount: 0, note: '' },
+      { name: 'Funeral Savings', type: 'expense', section: 'savings', amount: 0, note: '' },
+      { name: 'Financial Planning', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Education Plan (CPUT, Unisa, USB)', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Electronics  (Tablet, Phone)', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Car Deposit / Balloon Settlement', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Computer Hardware&Software', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Appliances: (TV, Decoders, Microwaves)', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'IIA Membership', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Car Maintanance', type: 'expense', section: 'household', amount: 0, note: '' },
+      { name: 'Shops Truworths Markhams', type: 'expense', section: 'lifestyle', amount: 0, note: '' },
+      { name: 'Vacation', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'House Purchase', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Toiletries', type: 'expense', section: 'health', amount: 0, note: '' },
+      { name: 'Birthday  Expenses', type: 'expense', section: 'health', amount: 0, note: '' },
+      { name: 'Baby Expenses', type: 'expense', section: 'health', amount: 0, note: '' },
+      { name: 'Wedding Expenses', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Loan Account', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Pocket Money', type: 'expense', section: 'lifestyle', amount: 0, note: '' },
+      { name: 'Debt', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Cell Phone Purchased', type: 'expense', section: 'planning', amount: 0, note: '' },
+      { name: 'Loan Settlement', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Interest Re-Imbursement', type: 'expense', section: 'debt', amount: 0, note: '' },
+      { name: 'Disposable Income', type: 'result', section: 'result', amount: 0, note: 'Auto-calculated' }
+    ];
+
+    let state = loadState();
+    populateSectionOptions();
+
+    function loadState() {
+      try {
+        const savedV3 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (savedV3 && Array.isArray(savedV3.items)) return normalizeState(savedV3);
+        const savedV2 = JSON.parse(localStorage.getItem('budget_app_v2'));
+        if (savedV2 && Array.isArray(savedV2.items)) return normalizeState(savedV2);
+        const savedV1 = JSON.parse(localStorage.getItem('budget_app_v1'));
+        if (savedV1 && Array.isArray(savedV1.items)) return normalizeState(savedV1);
+      } catch (e) {}
+      return normalizeState({ month: 'Month 2016', items: defaultItems.map(item => ({ ...item })) });
+    }
+
+    function normalizeState(input) {
+      const normalizedItems = (input.items || []).map(item => ({
+        name: item.name || 'Untitled Item',
+        type: item.type || 'expense',
+        section: item.section || inferSection(item.name, item.type),
+        amount: Number(item.amount || 0),
+        note: item.note || ''
+      }));
+      const hasResult = normalizedItems.some(item => item.type === 'result');
+      if (!hasResult) normalizedItems.push({ name: 'Disposable Income', type: 'result', section: 'result', amount: 0, note: 'Auto-calculated' });
+      return { month: input.month || 'Month 2016', items: normalizedItems };
+    }
+
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    function formatRand(value) {
+      return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 2 }).format(Number(value || 0));
+    }
+
+    function inferSection(name, type) {
+      if (type === 'income') return 'income';
+      if (type === 'result') return 'result';
+      const lower = String(name || '').toLowerCase();
+      if (/(saving|retirement|funeral)/.test(lower)) return 'savings';
+      if (/(loan|debt|credit|bond|home loan|interest|finance|rcp|settlement|bank)/.test(lower)) return 'debt';
+      if (/(water|rates|electricity|internet|telephone|dstv|cell contract)/.test(lower)) return 'utilities';
+      if (/(medical|doctor|medication|toiletries|baby|birthday)/.test(lower)) return 'health';
+      if (/(education|studies|planning|electronics|computer|appliances|membership|vacation|house purchase|wedding|cell phone purchased|deposit|balloon)/.test(lower)) return 'planning';
+      if (/(church|christmas|festive|shops|pocket money)/.test(lower)) return 'lifestyle';
+      return 'household';
+    }
+
+    function populateSectionOptions() {
+      const select = document.getElementById('newItemSection');
+      const entries = Object.entries(SECTION_LABELS).filter(([key]) => key !== 'result');
+      select.innerHTML = entries.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+    }
+
+    function sectionSubtotal(sectionKey) {
+      return state.items
+        .filter(item => item.section === sectionKey && item.type !== 'result')
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    }
+
+    function computeTotals() {
+      let totalIncome = 0;
+      let totalExpenses = 0;
+      let totalSavings = 0;
+      state.items.forEach(item => {
+        const amount = Number(item.amount || 0);
+        if (item.type === 'income') totalIncome += amount;
+        if (item.type === 'expense') {
+          totalExpenses += amount;
+          if (item.section === 'savings' || item.section === 'planning') totalSavings += amount;
+        }
+      });
+      const disposable = totalIncome - totalExpenses;
+      const resultItem = state.items.find(item => item.type === 'result');
+      if (resultItem) resultItem.amount = disposable;
+      document.getElementById('totalIncome').textContent = formatRand(totalIncome);
+      document.getElementById('totalExpenses').textContent = formatRand(totalExpenses);
+      document.getElementById('totalSavings').textContent = formatRand(totalSavings);
+      document.getElementById('disposableIncome').textContent = formatRand(disposable);
+    }
+
+    function render() {
+      document.getElementById('monthInput').value = state.month;
+      const sectionList = document.getElementById('sectionList');
+      sectionList.innerHTML = '';
+      const orderedSections = ['income', 'household', 'utilities', 'health', 'savings', 'debt', 'planning', 'lifestyle', 'result'];
+      orderedSections.forEach(sectionKey => {
+        const items = state.items.filter(item => item.section === sectionKey);
+        if (!items.length) return;
+        const card = document.createElement('section');
+        card.className = 'section-card';
+        const subtotal = sectionSubtotal(sectionKey);
+        const isResult = sectionKey === 'result';
+        card.innerHTML = `
+          <div class="section-head">
+            <div>
+              <h2>${escapeHtml(SECTION_LABELS[sectionKey])}</h2>
+              <div class="muted">${escapeHtml(state.month)} grouped budget section</div>
+            </div>
+            <div class="section-meta">
+              <span class="meta-chip">${items.length} item${items.length === 1 ? '' : 's'}</span>
+              <span class="meta-chip">${isResult ? 'Calculated value' : 'Subtotal: ' + formatRand(subtotal)}</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 30%;">Line Item Name</th>
+                  <th style="width: 14%;">Type</th>
+                  <th style="width: 16%;">Section</th>
+                  <th style="width: 16%;">Budgeted Amount</th>
+                  <th style="width: 14%;">Monthly Note</th>
+                  <th style="width: 10%;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map(item => renderRow(item)).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${isResult ? '<div class="footer-note">Disposable Income is calculated automatically as total income minus all expense items.</div>' : ''}
+        `;
+        sectionList.appendChild(card);
+      });
+      computeTotals();
+      saveState();
+    }
+
+    function renderRow(item) {
+      const index = state.items.indexOf(item);
+      const rowClass = item.type === 'income' ? 'income-row' : item.type === 'result' ? 'disposable-row' : 'expense-row';
+      const typeClass = item.type === 'income' ? 'pill-income' : item.type === 'result' ? 'pill-result' : 'pill-expense';
+      const typeLabel = item.type === 'result' ? 'Calculated' : (item.type.charAt(0).toUpperCase() + item.type.slice(1));
+      const sectionOptions = Object.entries(SECTION_LABELS)
+        .filter(([key]) => key !== 'result')
+        .map(([value, label]) => `<option value="${value}" ${item.section === value ? 'selected' : ''}>${label}</option>`)
+        .join('');
+      return `
+        <tr class="${rowClass}">
+          <td><input type="text" value="${escapeAttribute(item.name)}" ${item.type === 'result' ? 'readonly' : ''} data-field="name" data-index="${index}" class="item-name" /></td>
+          <td><span class="category-pill ${typeClass}">${typeLabel}</span></td>
+          <td>${item.type === 'result' ? `<span class="muted">${SECTION_LABELS[item.section]}</span>` : `<select data-field="section" data-index="${index}">${sectionOptions}</select>`}</td>
+          <td class="amount-cell"><input type="number" step="0.01" value="${Number(item.amount || 0)}" ${item.type === 'result' ? 'readonly' : ''} data-field="amount" data-index="${index}" /></td>
+          <td><input type="text" value="${escapeAttribute(item.note || '')}" ${item.type === 'result' ? 'readonly' : ''} data-field="note" data-index="${index}" /></td>
+          <td><div class="row-actions">${item.type !== 'result' ? `<button class="danger icon-btn" data-delete="${index}" type="button">Delete</button>` : `<span class="muted">Locked</span>`}</div></td>
+        </tr>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttribute(str) { return escapeHtml(str); }
+
+    document.getElementById('monthInput').addEventListener('input', (e) => {
+      state.month = e.target.value || 'Budget';
+      render();
+    });
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      const name = document.getElementById('newItemName').value.trim();
+      const type = document.getElementById('newItemType').value;
+      const section = document.getElementById('newItemSection').value || (type === 'income' ? 'income' : 'household');
+      if (!name) {
+        alert('Please enter a line item name.');
+        return;
+      }
+      const newItem = { name, type, section: type === 'income' ? 'income' : section, amount: 0, note: '' };
+      const resultIndex = state.items.findIndex(item => item.type === 'result');
+      if (resultIndex >= 0) state.items.splice(resultIndex, 0, newItem);
+      else state.items.push(newItem);
+      document.getElementById('newItemName').value = '';
+      render();
+    });
+
+    document.getElementById('sectionList').addEventListener('input', (e) => {
+      const field = e.target.dataset.field;
+      const index = Number(e.target.dataset.index);
+      if (!field || Number.isNaN(index) || !state.items[index]) return;
+      state.items[index][field] = field === 'amount' ? Number(e.target.value || 0) : e.target.value;
+      render();
+    });
+
+    document.getElementById('sectionList').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-delete]');
+      if (!button) return;
+      const index = Number(button.dataset.delete);
+      if (Number.isNaN(index)) return;
+      state.items.splice(index, 1);
+      render();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const rows = [['Month', state.month], [], ['Section', 'Line Item Name', 'Type', 'Budgeted Amount', 'Monthly Note']];
+      state.items.forEach(item => {
+        rows.push([SECTION_LABELS[item.section] || item.section, item.name, item.type, Number(item.amount || 0).toFixed(2), item.note || '']);
+      });
+      const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${state.month.replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'budget'}_budget.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>
